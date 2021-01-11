@@ -6,9 +6,10 @@ from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from data_processing import count_eps_ea_by_day, update_progress, count_cumulation
-from db_connection import db_query, db_query_dataframe, read_query, update_query
+from db_connection import db_query_dataframe, read_query, update_query
 from data_visualization import published_eps_trace, ea_markers_trace
 import datetime
+import plotly.express as px
 import pandas as pd
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -44,6 +45,21 @@ def get_story_id_by_title(title):
         return ''
     else:
         return df['story_id'][0]
+
+
+def get_series_ids():
+    query = read_query('sqls/get_series.sql')
+    query = update_query(query)
+    df = db_query_dataframe(DB_SETTINGS, query)
+    return df
+
+
+def get_story_info(story):
+    df = get_df_from_db('sqls/get_story_info.sql', story)
+    title = df['title'][0]
+    eps = df['episodesCount'][0]
+    pub_date = df['releasedAt'][0]
+    return title, eps, pub_date
 
 
 def preprocess_story_data(story):
@@ -183,16 +199,116 @@ def text_to_date(input_date):
 
     year = int(date_list[0])
 
-    if (date_list[1].startswith('0')):
+    if date_list[1].startswith('0'):
         month = int(date_list[1][1:])
     else:
         month = int(date_list[1])
 
-    if (date_list[2].startswith('0')):
+    if date_list[2].startswith('0'):
         day = int(date_list[2][1:])
     else:
         day = int(date_list[2])
     return datetime.date(year, month, day)
+
+
+def process_data(story):
+    df = get_df_from_db('sqls/get_retention_info.sql', story)
+    title, story_length, pub_date = get_story_info(story)
+
+    df = df[(df['fin_eps'] <= story_length)]
+    df = df[(df['read_at'] >= pub_date)]
+
+    df['days_before_read'] = df['read_at'] - df['created_at']
+    df['days_before_read'] = df['days_before_read'].apply(lambda x: x.days)
+    df['days_after_read'] = df['last_active_at'] - df['read_at']
+    df['days_after_read'] = df['days_after_read'].apply(lambda x: x.days)
+    df['total_exist_days'] = df['last_active_at'] - df['created_at']
+    df['total_exist_days'] = df['total_exist_days'].apply(lambda x: x.days)
+
+    filtered_ret_df = df[(df['days_after_read'] >= 0)]
+    filtered_ret_df = filtered_ret_df[(filtered_ret_df['days_before_read'] > 0)]
+
+    filtered_ret_df['before_read_share'] = filtered_ret_df['days_before_read'] / filtered_ret_df['total_exist_days']
+    filtered_ret_df['after_read_share'] = filtered_ret_df['days_after_read'] / filtered_ret_df['total_exist_days']
+
+    #     filtered_ret_df = filtered_ret_df[(
+    #         filtered_ret_df['last_active_at'] < datetime.date.today() - datetime.timedelta(days=7))]
+    return filtered_ret_df, title, pub_date
+
+
+def get_churn_rate(story):
+    filtered_ret_df, title, pub_date = process_data(story)
+    input_churn_df = filtered_ret_df[['user_id', 'days_after_read']].groupby('days_after_read').count().reset_index()
+    input_read_df = filtered_ret_df[['user_id', 'fin_eps']].groupby('fin_eps').count().reset_index()
+
+    churn_df = []
+    sum_users = input_churn_df['user_id'].sum()
+    prev_users = 0
+
+    for n, row in input_churn_df.iterrows():
+        row['sum_users'] = sum_users
+        row['churn'] = row['user_id'] / sum_users
+        row['churn_from_prev'] = row['user_id'] / (sum_users - prev_users)
+        row['story'] = title
+        prev_users += row['user_id']
+
+        churn_df.append(row.values)
+
+    story_churn_data = pd.DataFrame(
+        churn_df, columns=['days_after_read', 'user_id', 'sum_users', 'churn', 'churn_from_prev', 'story'])
+
+    churn_df = []
+    sum_users = input_read_df['user_id'].sum()
+    prev_users_sum = 0
+    prev_users = sum_users
+
+    for n, row in input_read_df.iterrows():
+        row['users'] = sum_users - prev_users_sum
+        row['churn'] = row['users'] / sum_users
+        row['churn_from_prev'] = row['users'] / prev_users
+        row['story'] = title
+
+        prev_users_sum += row['user_id']
+        prev_users = row['users']
+        churn_df.append(row.values)
+
+    story_read_data = pd.DataFrame(churn_df, columns=[
+        'fin_eps', 'user_id', 'users', 'churn', 'churn_from_prev', 'story'])
+
+    return story_churn_data, story_read_data
+
+
+def series_churn_fig():
+    df = get_series_ids()
+
+    churn_rate_df = []
+    churn_read_rate_df = []
+
+    for n, row in df.iterrows():
+        churn_rate, read_rate = get_churn_rate(row['story_id'])[:-7]
+        churn_rate_df.append(churn_rate)
+        churn_read_rate_df.append(read_rate)
+
+    churn_data = pd.concat(churn_rate_df, sort=False, ignore_index=True)
+    churn_read_data = pd.concat(churn_read_rate_df, sort=False, ignore_index=True)
+
+    fig_churn = px.line(
+        churn_data,
+        x="days_after_read",
+        y="churn_from_prev",
+        color="story",
+        title='Churn After Story Read')
+
+    fig_read_churn = px.line(
+        churn_read_data,
+        x="fin_eps",
+        y="churn_from_prev",
+        color="story",
+        title='Churn After Read Episode')
+    return fig_churn, fig_read_churn
+
+
+# churn_fig, read_fig = series_churn_fig()
 
 
 app.layout = html.Div(children=[
@@ -213,7 +329,7 @@ app.layout = html.Div(children=[
     ),
 
     html.Div(["Story Title: ",
-              dcc.Input(id='story_title', value='Заброшенная школа', type='text')],
+              dcc.Input(id='story_title', value='Изоляция', type='text')],
              style={"width": "60%", "float": "right"},
              ),
 
@@ -223,7 +339,7 @@ app.layout = html.Div(children=[
              ),
 
     html.Div(["End Date: ",
-              dcc.Input(id='end_date', value='2020-09-08', type='text')],
+              dcc.Input(id='end_date', value='2020-09-13', type='text')],
              style={"width": "20%", "float": "left"},
              ),
 

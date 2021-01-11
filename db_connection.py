@@ -12,9 +12,9 @@ def read_query(file_path):
 
 
 def update_query(query: str, params={}):
-        for param in params:
-            query = query.replace("{{"+param+"}}", str(params[param]))
-        return query
+    for param in params:
+        query = query.replace("{{"+param+"}}", str(params[param]))
+    return query
 
 
 def db_query(db_settings, query):

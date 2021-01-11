@@ -25,10 +25,10 @@ WITH gen_data AS
                     OR pr."productId" = 'me.zahleb.subscriptions.monthly_alt2'
                     OR pr."productId" = 'me.zahleb.subscriptions.3months' THEN 999*pr."count"
                WHEN pr."productId" = 'me.zahleb.subscriptions.yearly' THEN 2690*pr."count"
-               WHEN pr."productId" = 'me.zahleb.purchases.lifetime' THEN 3990*pr."count"
+               WHEN pr."productId" = 'me.zahleb.purchases.lifetime' THEN 3990
                WHEN pr."productId" = 'early_access' THEN 29
                WHEN pr."productId" = 'month_300'
-                    AND pr."isTrialPeriod" = 'false' THEN 299
+                    AND pr."isTrialPeriod" = 'false' THEN 299*pr."count"
                WHEN pr."productId" = 'month_300'
                     OR pr."productId" = 'month_sale' THEN 299*pr."count"
                WHEN pr."productId" = 'week_sale' THEN 99*pr."count"

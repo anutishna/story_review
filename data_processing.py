@@ -16,11 +16,8 @@ def get_last_ep_date(episodes_df):
     free_access = episodes_df['free_access_at'].dropna()
 
     if free_access.empty:
-#         print(episodes_df['published_at'].max())
         return episodes_df['published_at'].max()
     else:
-#         print(max(episodes_df['published_at'].max(),
-#                    free_access.max()))
         return max(episodes_df['published_at'].max(),
                    free_access.max())
 

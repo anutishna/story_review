@@ -1,0 +1,9 @@
+*.ipynb
+__pycache__/*
+editors_review/*
+/story_info.csv
+/valuable_stories.csv
+/valuable_stories_2.csv
+/paid_users.csv
+/appodeal_data.py
+.ipynb_checkpoints/*
