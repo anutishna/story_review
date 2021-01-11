@@ -5,5 +5,5 @@ editors_review/*
 /valuable_stories.csv
 /valuable_stories_2.csv
 /paid_users.csv
-/appodeal_data.py
+appodeal_data.py
 .ipynb_checkpoints/*
