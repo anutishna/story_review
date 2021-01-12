@@ -7,3 +7,4 @@ editors_review/*
 /paid_users.csv
 /appodeal_data.py
 .ipynb_checkpoints/*
+/sqls/.ipynb_checkpoints/
