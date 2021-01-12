@@ -177,15 +177,16 @@ def get_revenue_per_platform(story_ids):
     i = 1
 
     rev_data_list = []
-    for id in story_ids:
+    for s_id in story_ids:
         print('Getting data for story {}/{}...'.format(i, total_stories))
-        episodes, _, _, _, progress_rev = preprocess_story_data(id)
+        episodes, _, _, _, progress_rev = preprocess_story_data(s_id)
         rev_data = progress_rev.drop(columns=['date', 'users_stop_reading', 'ios_users_stop_reading',
                                               'android_users_stop_reading']).fillna(0).reset_index(drop=True).iloc[-1:]
 
         title = episodes.title[0]
         rev_data['title'] = title
         rev_data_list.append(rev_data)
+        i += 1
 
     rev_data_df = pd.concat(rev_data_list)
 
@@ -199,6 +200,7 @@ def get_revenue_per_platform(story_ids):
                                         'sum_ea_revenue': 'early_accesses',
                                         'sum_ads_revenue': 'ads'}).reset_index(drop=True)
 
+    column_to_float(ios_data, 'subscribtions')
     ios_data['rev_per_user'] = ios_data.subscribtions / ios_data.users
 
     column_to_float(and_data, 'subscribtions')

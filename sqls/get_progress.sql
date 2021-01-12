@@ -1,6 +1,6 @@
 WITH progs_data AS
   (SELECT "userId",
-          "progress"->>'finishedEpisodes' AS fin_eps,
+          ("progress"->>'finishedEpisodes')::integer AS fin_eps,
                        to_timestamp(("progress"->>'updatedAt')::integer)::date AS updated_at,
                        i."deviceType"
    FROM "UserProgress" up

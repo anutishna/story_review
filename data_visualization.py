@@ -172,6 +172,6 @@ def vis_revenue_per_platfrom(ios_data, and_data):
     add_bar_trace_to_fig(fig_2, and_data.title, and_data.early_accesses, 'EA Revenue')
     add_scatter_trace_to_fig(fig_2, and_data.title, and_data.rev_per_user_no_ea, 'Revenue per User (no EA)')
     add_scatter_trace_to_fig(fig_2, and_data.title, and_data.rev_per_user_with_ea, 'Revenue per User (with EA)',
-                             marker_symbol='x-thin', marker_line_color='darkblue')
+                             marker_symbol='x-thin', marker_line_color='darkblue', mode='markers')
     fig_2.update_layout(title='Android Revenue', barmode='stack', xaxis={'categoryorder': 'total descending'})
     return fig, fig_2
