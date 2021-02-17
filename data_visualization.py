@@ -50,75 +50,116 @@ def published_eps_trace(episodes_df, height):
     )
 
 
-def visualize_story(episodes, ep_info, zero_eps_read, max_eps_read, progress_rev):
+# def visualize_story(episodes, ep_info, zero_eps_read, max_eps_read, progress_rev):
+def visualize_story(episodes, ep_info, data):
+    print('Visualizing story...')
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-    fig.add_trace(go.Scatter(
-        x=progress_rev['date'],
-        y=progress_rev['sum_ea_revenue'],
-        name='EA revenue',
-        legendgroup='revenue',
-        stackgroup='one', mode='none'
-    ), secondary_y=True)
+    # Публикация
+    fig.add_trace(published_eps_trace(
+        episodes, data['users_stopped_at_0_cum'].min()
+    ), secondary_y=False)
+
+    fig.add_trace(ea_markers_trace(
+        ep_info, data['users_stopped_cum'].max()
+    ), secondary_y=False)
+
+    # Доходы
 
     fig.add_trace(go.Scatter(
-        x=progress_rev['date'],
-        y=progress_rev['sum_ios_subs_revenue'],
-        name='iOS subs revenue',
-        legendgroup='revenue',
-        stackgroup='one', mode='none'
-    ), secondary_y=True)
-
-    fig.add_trace(go.Scatter(
-        x=progress_rev['date'],
-        y=progress_rev['sum_android_subs_revenue'],
-        name='Android subs revenue',
-        legendgroup='revenue',
-        stackgroup='one', mode='none'
-    ), secondary_y=True)
-
-    fig.add_trace(go.Scatter(
-        x=progress_rev['date'],
-        y=progress_rev['sum_ads_revenue'],
+        x=data['updated_at'],
+        y=data['ads_revenue_cum'],
         name='Ads revenue',
         legendgroup='revenue',
         stackgroup='one', mode='none'
     ), secondary_y=True)
 
     fig.add_trace(go.Scatter(
-        x=progress_rev['date'],
-        y=progress_rev['sum_users_stop_reading'],
-        name="users stopped reading",
+        x=data['updated_at'],
+        y=data['ios_subs_revenue_cum'],
+        name='iOS subs revenue',
+        legendgroup='revenue',
+        stackgroup='one', mode='none'
+    ), secondary_y=True)
+
+    fig.add_trace(go.Scatter(
+        x=data['updated_at'],
+        y=data['android_subs_revenue_cum'],
+        name='Android subs revenue',
+        legendgroup='revenue',
+        stackgroup='one', mode='none'
+    ), secondary_y=True)
+
+    fig.add_trace(go.Scatter(
+        x=data['updated_at'],
+        y=data['early_access_revenue_cum'],
+        name='EA revenue',
+        legendgroup='revenue',
+        stackgroup='one', mode='none'
+    ), secondary_y=True)
+
+    # Прогресс
+
+    fig.add_trace(go.Scatter(
+        x=data['updated_at'],
+        y=data['users_stopped_cum'],
+        name="all users",
         mode='lines',
         legendgroup='read'
     ), secondary_y=False)
 
     fig.add_trace(go.Scatter(
-        x=zero_eps_read['date'],
-        y=zero_eps_read['sum_users_read'],
+        x=data['updated_at'],
+        y=data['users_stopped_at_0_cum'],
         name="users stopped at 0 ep",
         mode='lines',
         legendgroup='read'
     ), secondary_y=False)
 
     fig.add_trace(go.Scatter(
-        x=max_eps_read['date'],
-        y=max_eps_read['sum_users_read'],
+        x=data['updated_at'],
+        y=data['users_finished_story_cum'],
         name="users finished story",
         mode='lines',
         legendgroup='read'
     ), secondary_y=False)
 
-    fig.add_trace(published_eps_trace(
-        episodes, zero_eps_read['users_read'].min()
+    # Прогресс с разбивкой по платформам
+
+    fig.add_trace(go.Scatter(
+        x=data['updated_at'],
+        y=data['and_users_stopped_cum'],
+        name="Android users",
+        mode='lines',
+        line=dict(dash='dot'),
+        legendgroup='read'
     ), secondary_y=False)
 
-    fig.add_trace(ea_markers_trace(
-        ep_info, progress_rev['sum_users_stop_reading'].max()
+    fig.add_trace(go.Scatter(
+        x=data['updated_at'],
+        y=data['ios_users_stopped_cum'],
+        name="iOS users",
+        mode='lines',
+        line=dict(dash='dot'),
+        legendgroup='read'
+    ), secondary_y=False)
+
+    # Прогресс с разбивкой по чтениям / прослушиваниям
+
+    # if data['users_stopped_listening_cum'].max() > 0:
+
+    fig.add_trace(go.Scatter(
+        x=data['updated_at'],
+        y=data['users_stopped_reading_cum'],
+        name="readers",
+        mode='lines',
+        line=dict(color='orange', dash='dash'),
+        legendgroup='read'
     ), secondary_y=False)
 
     fig.update_layout(
         title=episodes['title'][0],
+        height=600,
         legend=dict(
             orientation="h",
             yanchor="bottom",

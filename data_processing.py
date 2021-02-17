@@ -82,7 +82,6 @@ def count_eps_ea_by_day(episodes_df):
 def count_cumulation(df, col_name, new_col_name):
     count = 0
     col_list = []
-
     for _, row in df.iterrows():
         count += row[col_name]
         col_list.append(count)
@@ -90,81 +89,33 @@ def count_cumulation(df, col_name, new_col_name):
     # return df
 
 
-def get_ads_revenue(progress):
-    """Получает информацию о доходах с рекламы"""
+def append_ads_revenue(df):
+    cols = list(df.columns)
     ads_rev = pd.read_csv('ads_revenue.csv')
-
-    temp_p = progress.copy()
-    temp_p['fin_eps'] = temp_p['fin_eps'].apply(lambda x: int(x))
-    temp_p['eps_read'] = temp_p['fin_eps'] * temp_p['users_read']
-    temp_p = temp_p[['date', 'eps_read']].groupby('date').sum().reset_index()
-    temp_p['period'] = temp_p['date'].apply(lambda x: x.strftime("%B") + ' ' + str(x.year))
-
-    ads_rev_progress = temp_p.merge(ads_rev, left_on='period', right_on='Period ', how='outer')[[
-        'date', 'eps_read', 'Rev per Episode'
-    ]]
-    ads_rev_progress = ads_rev_progress[(ads_rev_progress['date'].isna() == False)].drop_duplicates()
-    ads_rev_progress['ads_revenue'] = ads_rev_progress['eps_read'] * ads_rev_progress['Rev per Episode']
-    ads_rev_progress = ads_rev_progress.fillna(0)
-    count_cumulation(ads_rev_progress, 'ads_revenue', 'sum_ads_revenue')
-    return ads_rev_progress
+    df['period'] = df['updated_at'].apply(lambda x: x.strftime("%B") + ' ' + str(x.year))
+    df = df.merge(ads_rev, left_on='period', right_on='Period ', how='left')
+    df['ads_revenue'] = df['and_eps_read'] * df['Rev per Episode']
+    count_cumulation(df, 'ads_revenue', 'ads_revenue_cum')
+    df = df.fillna(0)
+    cols.extend(['ads_revenue', 'ads_revenue_cum'])
+    return df[cols]
 
 
 def preprocess_story_data(story):
-    progress = get_df_from_db('sqls/get_progress.sql', story)
-    purchases = get_df_from_db('sqls/get_purchases.sql', story)
+    print('Getting progress and purchases data from DB...')
+    data = get_df_from_db('sqls/get_progs_and_purs_data.sql', story)
+    print('Getting story info from DB...')
     episodes = get_df_from_db('sqls/get_episodes.sql', story)
 
     episodes = episodes[(episodes['published_at'] <= datetime.date.today())]
     episodes = episodes[(episodes['published_at'].isnull() == False)]
 
     ep_info = count_eps_ea_by_day(episodes)
-    progress = update_progress(progress, episodes)
-    #     progress = count_cumulation(progress, '')
-    #     zero_eps_read = progress[(progress['fin_eps']) == '0']
-    #     ten_eps_read = progress[(progress['fin_eps']) == '10']
-
-    if not purchases.empty:
-        base = purchases.purchaseDate[0]
-        numdays = (datetime.date.today() - base).days
-        date_list = [base + datetime.timedelta(days=x) for x in range(numdays + 1)]
-        data = {'purchaseDate': date_list}
-        dates_df = pd.DataFrame(data)
-        purchases = dates_df.merge(purchases, on='purchaseDate', how='outer').fillna(0)
-    else:
-        purchases = pd.DataFrame(columns=['purchaseDate', 'paid_users', 'all_purs', 'ios_subs', 'ios_rebills',
-                                          'android_subs', 'android_rebills', 'total_revenue', 'ios_subs_revenue',
-                                          'android_subs_revenue', 'early_access_revenue'])
-
-    count_cumulation(purchases, 'total_revenue', 'sum_revenue')
-    count_cumulation(purchases, 'early_access_revenue', 'sum_ea_revenue')
-    count_cumulation(purchases, 'ios_subs_revenue', 'sum_ios_subs_revenue')
-    count_cumulation(purchases, 'android_subs_revenue', 'sum_android_subs_revenue')
 
     ep_info = ep_info[(ep_info['date'] <= datetime.date.today())]
 
-    ads_revenue = get_ads_revenue(progress)
-
-    zero_eps_read = progress[progress.fin_eps == 0][['date', 'users_read']]
-    count_cumulation(zero_eps_read, 'users_read', 'sum_users_read')
-
-    max_eps_read = progress[progress.fin_eps == episodes.episodesCount[0]][['date', 'users_read']]
-    count_cumulation(max_eps_read, 'users_read', 'sum_users_read')
-
-    progress_rev = progress[['date', 'users_stop_reading', 'ios_users_stop_reading',
-                             'android_users_stop_reading']].merge(
-        purchases[['purchaseDate', 'sum_ios_subs_revenue', 'sum_android_subs_revenue', 'sum_ea_revenue',
-                   'sum_revenue']],
-        left_on='date', right_on='purchaseDate', how='outer'
-    ).drop(columns='purchaseDate').merge(
-        ads_revenue[['date', 'sum_ads_revenue']], on='date'
-    ).drop_duplicates()
-
-    count_cumulation(progress_rev, 'users_stop_reading', 'sum_users_stop_reading')
-    count_cumulation(progress_rev, 'ios_users_stop_reading', 'sum_ios_users_stop_reading')
-    count_cumulation(progress_rev, 'android_users_stop_reading', 'sum_android_users_stop_reading')
-
-    return episodes, ep_info, zero_eps_read, max_eps_read, progress_rev
+    data = append_ads_revenue(data)
+    return episodes, ep_info, data
 
 
 def column_to_float(df, col_name):

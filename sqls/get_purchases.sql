@@ -28,7 +28,7 @@ WITH gen_data AS
                WHEN pr."productId" = 'me.zahleb.purchases.lifetime' THEN 3990
                WHEN pr."productId" = 'early_access' THEN 29
                WHEN pr."productId" = 'month_300'
-                    AND pr."isTrialPeriod" = 'false' THEN 299*pr."count"
+                    AND pr."isTrialPeriod" = 'false' THEN 299
                WHEN pr."productId" = 'month_300'
                     OR pr."productId" = 'month_sale' THEN 299*pr."count"
                WHEN pr."productId" = 'week_sale' THEN 99*pr."count"

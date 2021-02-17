@@ -21,6 +21,7 @@ def get_story_ids_by_date(start_date, end_date):
 
 def get_story_id_by_title(title):
     """Функция для выявления идентификатора истории по названию"""
+    print('Getting story id...')
     query = read_query('sqls/get_story_id_by_title.sql')
     query = update_query(query, params={'title': title})
     df = db_query_dataframe(DB_SETTINGS, query)

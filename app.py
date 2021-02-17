@@ -17,7 +17,7 @@ app.layout = html.Div(children=[
         dcc.Graph(
             id='single_story_review',
         ),
-        style={"width": "60%", "float": "left"},
+        style={"width": "100%", "height": "100%", "float": "left"},
     ),
 
     # html.Div(
@@ -55,8 +55,8 @@ def update_graph(story_title):
     if story_id == '':
         raise PreventUpdate
 
-    episodes, ep_info, zero_eps_read, max_eps_read, progress_rev = preprocess_story_data(story_id)
-    fig = visualize_story(episodes, ep_info, zero_eps_read, max_eps_read, progress_rev)
+    episodes, ep_info, data = preprocess_story_data(story_id)
+    fig = visualize_story(episodes, ep_info, data)
     return fig
 
 
