@@ -50,7 +50,6 @@ def published_eps_trace(episodes_df, height):
     )
 
 
-# def visualize_story(episodes, ep_info, zero_eps_read, max_eps_read, progress_rev):
 def visualize_story(episodes, ep_info, data):
     print('Visualizing story...')
     fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -201,18 +200,35 @@ def add_scatter_trace_to_fig(p_fig, x, y, name, secondary_y=True,
     ), secondary_y=secondary_y)
 
 
-def vis_revenue_per_platfrom(ios_data, and_data):
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    add_bar_trace_to_fig(fig, ios_data.title, ios_data.subscribtions, 'Revenue')
-    add_scatter_trace_to_fig(fig, ios_data.title, ios_data.rev_per_user, 'Revenue per User')
-    fig.update_layout(title='iOS Revenue', barmode='stack', xaxis={'categoryorder': 'total descending'})
+# def vis_revenue_per_platfrom(ios_data, and_data):
+#     fig = make_subplots(specs=[[{"secondary_y": True}]])
+#     add_bar_trace_to_fig(fig, ios_data.title, ios_data.subscribtions, 'Revenue')
+#     add_scatter_trace_to_fig(fig, ios_data.title, ios_data.rev_per_user, 'Revenue per User')
+#     fig.update_layout(title='iOS Revenue', barmode='stack', xaxis={'categoryorder': 'total descending'})
+#
+#     fig_2 = make_subplots(specs=[[{"secondary_y": True}]])
+#     add_bar_trace_to_fig(fig_2, and_data.title, and_data.subscribtions, 'Subs Revenue')
+#     add_bar_trace_to_fig(fig_2, and_data.title, and_data.ads, 'Ads Revenue')
+#     add_bar_trace_to_fig(fig_2, and_data.title, and_data.early_accesses, 'EA Revenue')
+#     add_scatter_trace_to_fig(fig_2, and_data.title, and_data.rev_per_user_no_ea, 'Revenue per User (no EA)')
+#     add_scatter_trace_to_fig(fig_2, and_data.title, and_data.rev_per_user_with_ea, 'Revenue per User (with EA)',
+#                              marker_symbol='x-thin', marker_line_color='darkblue', mode='markers')
+#     fig_2.update_layout(title='Android Revenue', barmode='stack', xaxis={'categoryorder': 'total descending'})
+#     return fig, fig_2
 
-    fig_2 = make_subplots(specs=[[{"secondary_y": True}]])
-    add_bar_trace_to_fig(fig_2, and_data.title, and_data.subscribtions, 'Subs Revenue')
-    add_bar_trace_to_fig(fig_2, and_data.title, and_data.ads, 'Ads Revenue')
-    add_bar_trace_to_fig(fig_2, and_data.title, and_data.early_accesses, 'EA Revenue')
-    add_scatter_trace_to_fig(fig_2, and_data.title, and_data.rev_per_user_no_ea, 'Revenue per User (no EA)')
-    add_scatter_trace_to_fig(fig_2, and_data.title, and_data.rev_per_user_with_ea, 'Revenue per User (with EA)',
+
+def vis_revenue_per_platfrom(data):
+    ios_fig = make_subplots(specs=[[{"secondary_y": True}]])
+    add_bar_trace_to_fig(ios_fig, data.title, data.ios_subs_revenue_cum, 'Revenue')
+    add_scatter_trace_to_fig(ios_fig, data.title, data.ios_rev_per_user, 'Revenue per User')
+    ios_fig.update_layout(title='iOS Revenue', barmode='stack', xaxis={'categoryorder': 'total descending'})
+
+    android_fig = make_subplots(specs=[[{"secondary_y": True}]])
+    add_bar_trace_to_fig(android_fig, data.title, data.android_subs_revenue_cum, 'Subs Revenue')
+    add_bar_trace_to_fig(android_fig, data.title, data.ads_revenue_cum, 'Ads Revenue')
+    add_bar_trace_to_fig(android_fig, data.title, data.early_access_revenue_cum, 'EA Revenue')
+    add_scatter_trace_to_fig(android_fig, data.title, data.and_rev_per_user, 'Revenue per User (no EA)')
+    add_scatter_trace_to_fig(android_fig, data.title, data.and_rev_per_user_ea, 'Revenue per User (with EA)',
                              marker_symbol='x-thin', marker_line_color='darkblue', mode='markers')
-    fig_2.update_layout(title='Android Revenue', barmode='stack', xaxis={'categoryorder': 'total descending'})
-    return fig, fig_2
+    android_fig.update_layout(title='Android Revenue', barmode='stack', xaxis={'categoryorder': 'total descending'})
+    return ios_fig, android_fig
